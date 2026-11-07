@@ -1,0 +1,269 @@
+-- Kiểm tra xem game đã tải xong chưa
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Tạo ScreenGui chứa Menu
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ZenHubHitbox"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Nút Bật/Tắt Menu (Nút tròn nổi "ZEN" trên màn hình)
+local ToggleMenuBtn = Instance.new("TextButton")
+ToggleMenuBtn.Size = UDim2.new(0, 45, 0, 45)
+ToggleMenuBtn.Position = UDim2.new(0, 20, 0, 100)
+ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+ToggleMenuBtn.Text = "ZEN"
+ToggleMenuBtn.TextColor3 = Color3.fromRGB(0, 255, 128)
+ToggleMenuBtn.TextSize = 12
+ToggleMenuBtn.Font = Enum.Font.GothamBold
+ToggleMenuBtn.Active = true
+ToggleMenuBtn.Draggable = true
+ToggleMenuBtn.Parent = ScreenGui
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(1, 0)
+ToggleCorner.Parent = ToggleMenuBtn
+
+-- Khung Main Menu (Bảng chính)
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 260, 0, 230)
+MainFrame.Position = UDim2.new(0.5, -130, 0.5, -115)
+MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.Parent = MainFrame
+
+-- Tiêu đề Menu
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 35)
+Title.BackgroundTransparency = 1
+Title.Text = "ZENHUB HITBOX V3"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 14
+Title.Font = Enum.Font.GothamBold
+Title.Parent = MainFrame
+
+-- Biến cấu hình trạng thái
+getgenv().HitboxStatus = false
+getgenv().HitboxSize = 10
+getgenv().EspStatus = false
+
+-- Lưu trữ dữ liệu gốc và Highlight
+local OriginalSizes = {}
+local Highlights = {}
+
+-- Nút Bật/Tắt Hitbox
+local HitboxToggleBtn = Instance.new("TextButton")
+HitboxToggleBtn.Size = UDim2.new(0.9, 0, 0, 35)
+HitboxToggleBtn.Position = UDim2.new(0.05, 0, 0, 40)
+HitboxToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+HitboxToggleBtn.Text = "Hitbox: TẮT"
+HitboxToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+HitboxToggleBtn.TextSize = 13
+HitboxToggleBtn.Font = Enum.Font.GothamMedium
+HitboxToggleBtn.Parent = MainFrame
+
+local HitboxBtnCorner = Instance.new("UICorner")
+HitboxBtnCorner.CornerRadius = UDim.new(0, 6)
+HitboxBtnCorner.Parent = HitboxToggleBtn
+
+-- Nút Bật/Tắt ESP Highlight
+local EspToggleBtn = Instance.new("TextButton")
+EspToggleBtn.Size = UDim2.new(0.9, 0, 0, 35)
+EspToggleBtn.Position = UDim2.new(0.05, 0, 0, 80)
+EspToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+EspToggleBtn.Text = "ESP Highlight: TẮT"
+EspToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+EspToggleBtn.TextSize = 13
+EspToggleBtn.Font = Enum.Font.GothamMedium
+EspToggleBtn.Parent = MainFrame
+
+local EspBtnCorner = Instance.new("UICorner")
+EspBtnCorner.CornerRadius = UDim.new(0, 6)
+EspBtnCorner.Parent = EspToggleBtn
+
+-- Ô nhập giá trị kích thước Hitbox (Mặc định 10)[span_0](start_span)[span_0](end_span)
+local SizeBox = Instance.new("TextBox")
+SizeBox.Size = UDim2.new(0.9, 0, 0, 35)
+SizeBox.Position = UDim2.new(0.05, 0, 0, 120)
+SizeBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+SizeBox.Text = tostring(getgenv().HitboxSize)
+SizeBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+SizeBox.TextSize = 13
+SizeBox.Font = Enum.Font.GothamMedium
+SizeBox.ClearTextOnFocus = false
+SizeBox.Parent = MainFrame
+
+local BoxCorner = Instance.new("UICorner")
+BoxCorner.CornerRadius = UDim.new(0, 6)
+BoxCorner.Parent = SizeBox
+
+-- Dòng trạng thái bên dưới
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(1, 0, 0, 30)
+StatusLabel.Position = UDim2.new(0, 0, 0, 185)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "Màu: Trắng Đậm | 360 độ"
+StatusLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+StatusLabel.TextSize = 11
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.Parent = MainFrame
+
+-- Tính năng bấm vào nút tròn "ZEN" để ẩn/hiện menu chính
+ToggleMenuBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+end)
+
+-- Xử lý sự kiện bấm nút bật/tắt cho Hitbox
+HitboxToggleBtn.MouseButton1Click:Connect(function()
+    getgenv().HitboxStatus = not getgenv().HitboxStatus
+    if getgenv().HitboxStatus then
+        HitboxToggleBtn.Text = "Hitbox: BẬT"
+        HitboxToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 60)
+    else
+        HitboxToggleBtn.Text = "Hitbox: TẮT"
+        HitboxToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+        
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                if OriginalSizes[player] then
+                    player.Character.HumanoidRootPart.Size = OriginalSizes[player]
+                    player.Character.HumanoidRootPart.Transparency = 1
+                end
+            end
+        end
+    end
+end)
+
+-- Xử lý sự kiện bấm nút bật/tắt cho ESP Highlight
+EspToggleBtn.MouseButton1Click:Connect(function()
+    getgenv().EspStatus = not getgenv().EspStatus
+    if getgenv().EspStatus then
+        EspToggleBtn.Text = "ESP Highlight: BẬT"
+        EspToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 60)
+    else
+        EspToggleBtn.Text = "ESP Highlight: TẮT"
+        EspToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+        
+        for _, highlight in pairs(Highlights) do
+            if highlight then highlight:Destroy() end
+        end
+        Highlights = {}
+    end
+end)
+
+-- Xử lý thay đổi kích thước từ ô nhập
+SizeBox.FocusLost:Connect(function(enterPressed)
+    local num = tonumber(SizeBox.Text)
+    if num then
+        getgenv().HitboxSize = num
+    else
+        SizeBox.Text = tostring(getgenv().HitboxSize)
+    end
+end)
+
+-- Hàm tự động gán ESP cho người chơi mới hoặc khi họ hồi sinh (respawn) sau trận
+local function setupESP(player)
+    if player == LocalPlayer then return end
+    
+    player.CharacterAdded:Connect(function(newCharacter)
+        task.wait(0.5) -- Đợi nhân vật tải xong phần thân
+        if getgenv().EspStatus then
+            if Highlights[player] then
+                Highlights[player]:Destroy()
+                Highlights[player] = nil
+            end
+            
+            local highlight = Instance.new("Highlight")
+            highlight.Name = "ZenESP"
+            highlight.Adornee = newCharacter
+            highlight.FillColor = Color3.fromRGB(255, 255, 255)
+            highlight.FillTransparency = 0.5
+            highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+            highlight.OutlineTransparency = 0
+            highlight.Parent = newCharacter
+            Highlights[player] = highlight
+        end
+    end)
+end
+
+-- Lắng nghe người chơi mới vào hoặc đã có sẵn trong game
+for _, player in ipairs(Players:GetPlayers()) do
+    setupESP(player)
+end
+Players.PlayerAdded:Connect(setupESP)
+
+-- Vòng lặp cập nhật liên tục ESP (không bị reset qua các trận) và Hitbox (mất khi chết)
+task.spawn(function()
+    while true do
+        task.wait(0.2)
+        pcall(function()
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer then
+                    local character = player.Character
+                    if character then
+                        local humanoid = character:FindFirstChildOfClass("Humanoid")
+                        local rootPart = character:FindFirstChild("HumanoidRootPart")
+                        
+                        -- 1. ESP luôn duy trì liên tục, tự động làm mới khi qua trận/hồi sinh
+                        if getgenv().EspStatus then
+                            if not Highlights[player] or Highlights[player].Parent ~= character then
+                                if Highlights[player] then
+                                    Highlights[player]:Destroy()
+                                end
+                                
+                                local highlight = Instance.new("Highlight")
+                                highlight.Name = "ZenESP"
+                                highlight.Adornee = character
+                                highlight.FillColor = Color3.fromRGB(255, 255, 255)
+                                highlight.FillTransparency = 0.5
+                                highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+                                highlight.OutlineTransparency = 0
+                                highlight.Parent = character
+                                Highlights[player] = highlight
+                            end
+                        else
+                            if Highlights[player] then
+                                Highlights[player]:Destroy()
+                                Highlights[player] = nil
+                            end
+                        end
+
+                        -- 2. Hitbox giữ nguyên to đậm, chỉ mất khi bị hạ gục (máu <= 0)
+                        if humanoid and rootPart then
+                            if not OriginalSizes[player] then
+                                OriginalSizes[player] = rootPart.Size
+                            end
+
+                            if getgenv().HitboxStatus then
+                                if humanoid.Health <= 0 then
+                                    rootPart.Size = OriginalSizes[player]
+                                    rootPart.Transparency = 1
+                                else
+                                    rootPart.Size = Vector3.new(getgenv().HitboxSize, getgenv().HitboxSize, getgenv().HitboxSize)
+                                    rootPart.Transparency = 0.3
+                                    rootPart.Color = Color3.fromRGB(255, 255, 255)
+                                    rootPart.Material = Enum.Material.ForceField
+                                    rootPart.CanCollide = false
+                                end
+                            else
+                                rootPart.Size = OriginalSizes[player]
+                                rootPart.Transparency = 1
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
